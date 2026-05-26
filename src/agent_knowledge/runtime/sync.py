@@ -232,6 +232,32 @@ def _update_history(repo: Path, *, dry_run: bool = False) -> list[str]:
 # 7. Top-level sync orchestrator
 # ---------------------------------------------------------------------------
 
+def _check_framework_version(repo: Path) -> str | None:
+    """Return a warning string if the recorded framework version is older than installed."""
+    try:
+        from agent_knowledge import __version__
+        recorded: str | None = None
+        for candidate in [
+            repo / "bedrock" / "STATUS.md",
+            repo / ".agent-project.yaml",
+        ]:
+            if candidate.is_file():
+                text = candidate.read_text(encoding="utf-8", errors="replace")
+                m = re.search(r"^framework_version:\s*(\S+)", text, re.MULTILINE)
+                if m:
+                    recorded = m.group(1).strip()
+                    break
+        if recorded is None or recorded == __version__:
+            return None
+        return (
+            f"[bedrock] Framework version mismatch: project is on {recorded}, "
+            f"installed is {__version__}. Run: bedrock refresh-system"
+        )
+    except Exception:
+        pass
+    return None
+
+
 def run_sync(
     repo: Path,
     *,
@@ -240,6 +266,11 @@ def run_sync(
 ) -> dict[str, list[str]]:
     """Run all sync steps. Returns a dict of step -> action list."""
     results: dict[str, list[str]] = {}
+
+    version_warning = _check_framework_version(repo)
+    if version_warning:
+        import sys
+        print(version_warning, file=sys.stderr)
 
     results["memory-branches"] = sync_memory_branches(repo, dry_run=dry_run)
     results["git-evidence"] = extract_git_log(repo, dry_run=dry_run)
