@@ -64,10 +64,20 @@ Install the `project-bedrock` CLI on this machine so `bedrock --version` works. 
 
 The agent detects your OS, installs Python + pipx if needed, installs the package, and verifies it. Works on macOS, Linux, and Windows.
 
-**Option B — manual:**
+**Option B — one-liner (Mac / Linux):**
 
 ```bash
-pip install project-bedrock        # or: pipx install project-bedrock
+curl -fsSL https://raw.githubusercontent.com/robotaitai/project-bedrock/main/install.sh | bash
+```
+
+Auto-detects **uv** → **pipx** → **pip** in that order.
+
+**Option C — pick your tool:**
+
+```bash
+uv tool install project-bedrock   # fastest, isolated (recommended)
+pipx install project-bedrock      # isolated
+pip install project-bedrock       # classic
 ```
 
 > **PyPI:** `project-bedrock` &nbsp;&middot;&nbsp; **CLI:** `bedrock` &nbsp;&middot;&nbsp; **alias:** `agent-knowledge` (deprecated)
