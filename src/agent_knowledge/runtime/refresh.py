@@ -234,19 +234,14 @@ def _refresh_claude_md(repo_root: Path, *, dry_run: bool) -> dict[str, Any]:
     if current.strip() == template.strip():
         return {"target": ".claude/CLAUDE.md", "action": "up-to-date", "detail": "already matches template"}
 
-    # Check if the opening header matches — if not, it's been customized
-    tmpl_lines = template.strip().splitlines()
-    curr_lines = current.strip().splitlines()
-    header_match = (
-        len(curr_lines) >= 3
-        and curr_lines[:3] == tmpl_lines[:3]
-    )
-
-    if not header_match:
+    # Any file whose first non-empty line is a known bedrock header was installed by us.
+    first_line = current.strip().splitlines()[0].strip() if current.strip() else ""
+    _KNOWN_HEADERS = {"# bedrock", "# agent-knowledge"}
+    if first_line not in _KNOWN_HEADERS:
         return {
             "target": ".claude/CLAUDE.md",
             "action": "warn",
-            "detail": "differs from template and appears customized — review manually or re-run with --force",
+            "detail": "first line is not a known bedrock header — appears manually customized; skipping",
         }
 
     action = _write(target, template, dry_run=dry_run)
@@ -736,6 +731,18 @@ def run_refresh(
     # .agent-project.yaml — version field
     r = _refresh_project_yaml(repo_root, version, dry_run=dry_run)
     changes.append(r)
+
+    # Regenerate the HTML site if one already exists (picks up new templates/styles)
+    site_html = vault_dir / "Views" / "site" / "index.html"
+    if not site_html.exists():
+        site_html = vault_dir / "Outputs" / "site" / "index.html"  # legacy path
+    if site_html.exists() and not dry_run:
+        try:
+            from agent_knowledge.runtime.site import generate_site
+            generate_site(vault_dir)
+            changes.append({"target": "bedrock/Views/site/", "action": "refreshed", "detail": "site regenerated with current templates"})
+        except Exception:
+            pass
 
     # Determine overall action
     active_actions = {c["action"] for c in changes}

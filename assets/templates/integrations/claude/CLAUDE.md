@@ -41,3 +41,7 @@ Otherwise:
 ## When the context window is getting long
 
 - Run `/compact-context`
+
+## Generated site
+
+`bedrock view` builds a styled HTML site from the vault with emoji icons, TOC, Mermaid diagram rendering, and wikilink navigation. These are HTML-only features — plain-text rules (no emojis in code/responses) do not apply to the generated site.
