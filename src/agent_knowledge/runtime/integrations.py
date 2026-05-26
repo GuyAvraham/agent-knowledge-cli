@@ -144,6 +144,31 @@ def install_cursor(repo: Path, *, dry_run: bool = False, force: bool = False) ->
     return actions
 
 
+def install_claude_global(*, dry_run: bool = False, force: bool = False) -> list[str]:
+    """Install Claude commands globally to ~/.claude/commands/ so they work in every project."""
+    assets = get_assets_dir()
+    actions = []
+
+    commands_template_dir = assets / "templates" / "integrations" / "claude" / "commands"
+    if not commands_template_dir.is_dir():
+        return actions
+
+    global_commands_dir = Path.home() / ".claude" / "commands"
+    for cmd_src in sorted(commands_template_dir.glob("*.md")):
+        cmd_dst = global_commands_dir / cmd_src.name
+        rel = f"~/.claude/commands/{cmd_src.name}"
+        if cmd_dst.exists() and not force:
+            actions.append(f"  exists: {rel}")
+        elif dry_run:
+            actions.append(f"  [dry-run] would create: {rel}")
+        else:
+            global_commands_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(cmd_src, cmd_dst)
+            actions.append(f"  created: {rel}")
+
+    return actions
+
+
 def install_claude(repo: Path, *, dry_run: bool = False, force: bool = False) -> list[str]:
     """Install Claude project-local integration (settings, commands, instructions)."""
     assets = get_assets_dir()
@@ -264,6 +289,9 @@ def install_all(
 
     # Claude: always install -- settings/commands are inert outside Claude
     results["claude"] = _INSTALLERS["claude"](repo, dry_run=dry_run, force=force)
+
+    # Claude global: install commands to ~/.claude/commands/ so they work in every project
+    results["claude-global"] = install_claude_global(dry_run=dry_run, force=force)
 
     # Codex: install only when detected
     if detected.get("codex", False):

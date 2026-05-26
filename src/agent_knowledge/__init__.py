@@ -1,3 +1,3 @@
 """bedrock: adaptive, file-based project knowledge for AI coding agents."""
 
-__version__ = "0.4.12"
+__version__ = "0.4.13"

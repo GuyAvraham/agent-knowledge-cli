@@ -14,6 +14,16 @@ from agent_knowledge.runtime.paths import get_assets_dir
 from agent_knowledge.runtime.shell import run_bash_script, run_python_script
 
 
+def _open_in_browser(path: Path) -> None:
+    """Open a local file in the system browser, reliably across platforms."""
+    if sys.platform == "darwin":
+        subprocess.run(["open", str(path)], check=False)
+    elif sys.platform.startswith("linux"):
+        subprocess.run(["xdg-open", str(path)], check=False)
+    else:
+        os.startfile(str(path))  # Windows
+
+
 def _add_common_flags(
     args: list[str],
     *,
@@ -697,8 +707,7 @@ def export_html(
         click.echo(f"  index.html — {result['branch_count']} branches, {result['decision_count']} decisions, {result['note_count']} notes total", err=True)
         click.echo(f"  data/knowledge.json — structured site data", err=True)
         if open_browser:
-            import webbrowser
-            webbrowser.open(Path(result["index_html"]).as_uri())
+            _open_in_browser(Path(result["index_html"]))
 
 
 # -- view ------------------------------------------------------------------ #
@@ -713,8 +722,6 @@ def view(project: str, output_dir: str | None) -> None:
     Equivalent to export-html --open. No Obsidian required.
     The site is generated into Views/site/ by default and opened via file://.
     """
-    import webbrowser
-
     from agent_knowledge.runtime.site import generate_site
 
     vault = Path(project).resolve() / "bedrock"
@@ -725,7 +732,7 @@ def view(project: str, output_dir: str | None) -> None:
     out_dir = Path(output_dir).resolve() if output_dir else None
     result = generate_site(vault, out_dir)
     click.echo(f"{result['action']}: {result['site_dir']}", err=True)
-    webbrowser.open(Path(result["index_html"]).as_uri())
+    _open_in_browser(Path(result["index_html"]))
 
 
 # -- clean-import ---------------------------------------------------------- #
